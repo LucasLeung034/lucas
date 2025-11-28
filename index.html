@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Focus Suite</title>
+    <title>Lumina Focus Suite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
@@ -194,7 +194,7 @@
     <div id="view-home" class="view-section active-view w-full max-w-md">
         <div class="glass-panel rounded-[2rem] p-8 text-center">
             <div class="mb-8">
-                <h1 class="font-display text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-white to-white/60 mb-2">Lock In</h1>
+                <h1 class="font-display text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-white to-white/60 mb-2">Master Shifu</h1>
                 <p class="text-slate-400 text-sm uppercase tracking-widest">Personal Focus Suite</p>
             </div>
 
@@ -254,7 +254,7 @@
             </div>
             
             <div class="mt-8 pt-6 border-t border-white/5">
-                <p class="text-xs text-slate-500">v2.2 • Ready to focus</p>
+                <p class="text-xs text-slate-500">v2.3 • Ready to focus</p>
             </div>
         </div>
     </div>
@@ -445,7 +445,7 @@
 
             <div class="text-center mb-8 mt-4">
                 <h2 class="font-display text-2xl font-bold">Meme Stash</h2>
-                <p class="text-slate-400 text-xs uppercase tracking-widest">AI Generated Tomato Humor</p>
+                <p class="text-slate-400 text-xs uppercase tracking-widest">Tomatoes & Procrastination</p>
             </div>
 
             <!-- Meme Container -->
@@ -466,7 +466,7 @@
 
     <script>
         // --- API CONFIGURATION ---
-        const apiKey = ""; 
+        const apiKey = "Ez2PeZdlwObPy4K7i9cN6oablo9qh590"; 
 
         // --- GLOBAL CONSTANTS & STATE ---
         const FULL_DASH_ARRAY = 2 * Math.PI * 120; 
@@ -595,38 +595,50 @@
             }
         }
 
+        // --- MEME DATA (No API Key needed) ---
+        const TOMATO_MEMES = [
+            "Why did the tomato turn red? Because it saw the salad dressing... and the deadline approaching!",
+            "Pomodoro Technique: 25 minutes of work, 5 minutes of break, 3 hours of accidental scrolling.",
+            "Me: I'm going to be so productive today.\nNarrator: He was not.",
+            "I don't always use the Pomodoro timer, but when I do, I ignore the break alarm.",
+            "Productivity tip: If you wait until the last minute, it only takes a minute to do.",
+            "My focus is like a tomato: soft, easily bruised, and technically a fruit.",
+            "Task: 'Write essay'.\nBrain: 'Let's research the history of paperclips for 25 minutes.'",
+            "5 minute break: *blinks*\nClock: It's been 45 minutes.",
+            "You call it procrastination. I call it 'optimizing energy efficiency'.",
+            "If you cut a tomato in half, does it become two 12.5 minute timers?",
+            "Start timer > Stare at screen > Timer rings > 'Good job me'.",
+            "Why is it called a deadline? Because I feel dead when I cross the line.",
+            "Focusing is easy. It's the 'not getting distracted by a fly' part that's hard."
+        ];
+
         // --- MEME GENERATOR LOGIC ---
-        async function generateMeme() {
+        function generateMeme() {
             const btn = document.getElementById('meme-btn');
             const container = document.getElementById('meme-container');
             
             // Loading State
             btn.disabled = true;
-            btn.innerHTML = `<div class="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin"></div> Generatin'...`;
+            btn.innerHTML = `<div class="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin"></div> Picking a ripe one...`;
             
-            const prompt = "Generate a funny, clean, witty short text-based meme or joke about procrastination, the pomodoro technique, or tomatoes. It should be formatted as a punchline or a relatable thought. Be creative!";
-            
-            const text = await callGemini(prompt);
-            
-            btn.disabled = false;
-            btn.innerHTML = `<i data-lucide="sparkles" class="w-5 h-5"></i> Another One`;
-            lucide.createIcons();
+            // Simulate "fetching" for UX feel
+            setTimeout(() => {
+                const text = TOMATO_MEMES[Math.floor(Math.random() * TOMATO_MEMES.length)];
+                
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="sparkles" class="w-5 h-5"></i> Another One`;
+                lucide.createIcons();
 
-            if(text) {
-                // Render as a "Meme Card"
                 container.innerHTML = `
                     <div class="bg-black/30 p-6 rounded-2xl border-2 border-white/20 transform rotate-1 hover:rotate-0 transition-transform duration-300 w-full">
                         <div class="text-4xl mb-4 text-center">🍅</div>
                         <p class="text-xl font-bold text-center font-display text-white leading-relaxed">
-                            "${text.replace(/"/g, '')}"
+                            "${text}"
                         </p>
                     </div>
                 `;
-            } else {
-                container.innerHTML = `<div class="text-red-400">Failed to fetch meme. Try again!</div>`;
-            }
+            }, 600);
         }
-
 
         // --- CALENDAR LOGIC ---
         function changeMonth(delta) {
