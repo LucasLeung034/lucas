@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina Focus Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- Base & Typography --- */
+        body {
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            background-color: #0f172a;
+            color: white;
+            overflow-x: hidden;
+        }
+        .font-display {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        /* --- Dynamic Backgrounds --- */
+        #bg-layer {
+            transition: background 1.5s ease-in-out;
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Theme Gradients */
+        .theme-default { background: linear-gradient(-45deg, #1e1b4b, #312e81, #1e1b4b, #0f172a); } /* Deep Indigo/Slate */
+        .theme-focus { background: linear-gradient(-45deg, #be123c, #fb7185, #9f1239, #f43f5e); }
+        .theme-short { background: linear-gradient(-45deg, #0d9488, #2dd4bf, #115e59, #5eead4); }
+        .theme-long { background: linear-gradient(-45deg, #4f46e5, #818cf8, #3730a3, #6366f1); }
+        .theme-calendar { background: linear-gradient(-45deg, #0f766e, #115e59, #134e4a, #0f172a); } /* Emerald/Teal */
+        .theme-memes { background: linear-gradient(-45deg, #d97706, #f59e0b, #b45309, #78350f); } /* Amber/Orange */
+
+        /* --- Glassmorphism --- */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* --- Transitions --- */
+        .view-section {
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            width: 100%;
+            max-width: 28rem; /* max-w-md */
+            margin: 0 auto;
+        }
+        .hidden-view {
+            display: none;
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        .active-view {
+            display: block;
+            opacity: 1;
+            transform: scale(1);
+            animation: fadeInView 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fadeInView {
+            from { opacity: 0; transform: translateY(10px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* --- Loading Screen --- */
+        #loader {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            background: #020617;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease-out, visibility 0.8s;
+        }
+        .loader-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .pulse-ring { animation: pulse-glow 2s infinite; }
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.4); }
+            70% { box-shadow: 0 0 0 20px rgba(225, 29, 72, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
+        }
+
+        /* --- Timer Specifics --- */
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        /* --- Scrollbar & Lists --- */
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+        
+        .ai-list li { position: relative; padding-left: 1.5em; margin-bottom: 0.5em; line-height: 1.4; }
+        .ai-list li::before { content: "•"; position: absolute; left: 0; color: #fbbf24; font-weight: bold; }
+
+        /* Floating particles */
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            pointer-events: none;
+            animation: floatUp linear infinite;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            50% { opacity: 0.5; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+        }
+
+        /* Calendar Grid */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+            text-align: center;
+        }
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            position: relative;
+        }
+        .day-active-dot {
+            width: 4px;
+            height: 4px;
+            background-color: #fbbf24; /* Amber 400 */
+            border-radius: 50%;
+            margin-top: 2px;
+        }
+
+        /* Meme Typography */
+        .font-meme {
+            font-family: 'Impact', sans-serif;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 0 #000;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Loading Screen -->
+    <div id="loader">
+        <div class="relative mb-6">
+            <div class="w-24 h-24 rounded-full border-4 border-rose-500/30 pulse-ring flex items-center justify-center">
+                <i data-lucide="timer" class="w-10 h-10 text-rose-500 animate-pulse"></i>
+            </div>
+        </div>
+        <h2 class="text-2xl font-display font-bold tracking-widest uppercase bg-clip-text text-transparent bg-gradient-to-r from-rose-400 to-orange-300">TIME TO LOCK IN</h2>
+        <p class="text-slate-500 text-sm mt-2 tracking-wide">Initializing Focus Environment...</p>
+    </div>
+
+    <!-- Backgrounds -->
+    <div id="bg-layer" class="theme-default"></div>
+    <div class="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[-1]"></div>
+    <div id="particles" class="fixed inset-0 overflow-hidden z-[-1]"></div>
+
+    <!-- ========================================== -->
+    <!-- VIEW: HOME DASHBOARD -->
+    <!-- ========================================== -->
+    <div id="view-home" class="view-section active-view w-full max-w-md">
+        <div class="glass-panel rounded-[2rem] p-8 text-center">
+            <div class="mb-8">
+                <h1 class="font-display text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-white to-white/60 mb-2">Master Shifu</h1>
+                <p class="text-slate-400 text-sm uppercase tracking-widest">Personal Focus Suite</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Card: Timer -->
+                <button onclick="navigateTo('timer')" class="col-span-2 glass-card rounded-2xl p-6 text-left group relative overflow-hidden">
+                    <div class="absolute right-4 top-4 opacity-20 group-hover:opacity-40 transition-opacity">
+                        <i data-lucide="timer" class="w-12 h-12"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <h3 class="text-xl font-bold mb-1 group-hover:text-rose-300 transition-colors">Deep Focus</h3>
+                        <p class="text-sm text-slate-400">Pomodoro timer with AI assistance</p>
+                    </div>
+                </button>
+
+                <!-- Card: Tasks -->
+                <button onclick="navigateTo('tasks')" class="glass-card rounded-2xl p-5 text-left group relative overflow-hidden flex flex-col justify-between h-32">
+                    <div class="absolute right-3 top-3 opacity-20 group-hover:opacity-40 transition-opacity">
+                        <i data-lucide="check-square" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold mb-1 group-hover:text-teal-300 transition-colors">Tasks</h3>
+                    </div>
+                </button>
+
+                <!-- Card: Calendar -->
+                <button onclick="navigateTo('calendar')" class="glass-card rounded-2xl p-5 text-left group relative overflow-hidden flex flex-col justify-between h-32">
+                    <div class="absolute right-3 top-3 opacity-20 group-hover:opacity-40 transition-opacity">
+                        <i data-lucide="calendar" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold mb-1 group-hover:text-emerald-300 transition-colors">Calendar</h3>
+                    </div>
+                </button>
+
+                <!-- Card: Meme Stash (New) -->
+                <button onclick="navigateTo('memes')" class="col-span-2 glass-card rounded-2xl p-5 text-left group relative overflow-hidden flex items-center gap-4 hover:border-amber-500/30 transition-colors">
+                    <div class="bg-amber-500/20 p-3 rounded-xl text-amber-400">
+                        <i data-lucide="smile" class="w-6 h-6"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <h3 class="text-lg font-bold group-hover:text-amber-300 transition-colors">Meme Stash</h3>
+                        <p class="text-xs text-slate-400">Tomato humor for breaks</p>
+                    </div>
+                </button>
+
+                <!-- Card: Stats -->
+                <button onclick="navigateTo('stats')" class="col-span-2 glass-card rounded-2xl p-6 text-left group relative overflow-hidden">
+                    <div class="absolute right-4 top-4 opacity-20 group-hover:opacity-40 transition-opacity">
+                        <i data-lucide="bar-chart-2" class="w-12 h-12"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <h3 class="text-xl font-bold mb-1 group-hover:text-indigo-300 transition-colors">Insights</h3>
+                        <p class="text-sm text-slate-400">Track your total focus time</p>
+                    </div>
+                </button>
+            </div>
+            
+            <div class="mt-8 pt-6 border-t border-white/5">
+                <p class="text-xs text-slate-500">v2.2 • Ready to focus</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW: TIMER -->
+    <!-- ========================================== -->
+    <div id="view-timer" class="view-section hidden-view w-full max-w-md">
+        <div class="glass-panel rounded-[2.5rem] p-8 md:p-10 text-center relative">
+            
+            <button onclick="navigateTo('home')" class="absolute top-6 left-6 p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </button>
+
+            <header class="flex justify-end items-center mb-6">
+                <button onclick="toggleSound()" class="text-white/50 hover:text-white transition-colors">
+                    <i data-lucide="volume-2" id="sound-icon" class="w-5 h-5"></i>
+                </button>
+            </header>
+
+            <div class="mb-8">
+                 <span id="mode-label" class="text-xs font-bold tracking-[0.2em] uppercase text-white/70">Focus Time</span>
+            </div>
+
+            <div class="relative w-64 h-64 mx-auto mb-10 group cursor-pointer" onclick="toggleTimer()">
+                <svg class="w-full h-full drop-shadow-2xl">
+                    <circle cx="128" cy="128" r="120" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="6" />
+                    <circle id="progress-ring" class="progress-ring__circle" cx="128" cy="128" r="120" fill="none" stroke="white" stroke-width="6" stroke-linecap="round" stroke-dasharray="753.98" stroke-dashoffset="0" />
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                    <span id="timer-display" class="font-display text-7xl font-light tracking-tighter drop-shadow-lg tabular-nums">25:00</span>
+                    <div id="status-badge" class="mt-4 px-4 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-medium uppercase tracking-widest backdrop-blur-md opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                        Tap to Start
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-center gap-6 mb-8">
+                <button onclick="adjustTime(-1)" class="p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-all border border-white/5 hover:scale-105 active:scale-95"><i data-lucide="minus" class="w-5 h-5"></i></button>
+                <button id="main-btn" onclick="toggleTimer()" class="w-20 h-20 rounded-2xl bg-white text-slate-900 flex items-center justify-center shadow-lg shadow-white/20 hover:scale-105 active:scale-95 transition-all duration-300"><i data-lucide="play" id="play-icon" class="w-8 h-8 fill-current translate-x-0.5"></i></button>
+                <button onclick="adjustTime(1)" class="p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-all border border-white/5 hover:scale-105 active:scale-95"><i data-lucide="plus" class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 p-1.5 rounded-2xl bg-black/20 backdrop-blur-lg mb-8">
+                <button onclick="setMode('focus')" id="btn-focus" class="mode-btn py-3 rounded-xl text-sm font-semibold transition-all bg-white/10 shadow-sm text-white">25m</button>
+                <button onclick="setMode('short')" id="btn-short" class="mode-btn py-3 rounded-xl text-sm font-medium transition-all text-white/60 hover:text-white hover:bg-white/5">5m</button>
+                <button onclick="setMode('long')" id="btn-long" class="mode-btn py-3 rounded-xl text-sm font-medium transition-all text-white/60 hover:text-white hover:bg-white/5">10m</button>
+            </div>
+            
+            <div class="glass-panel rounded-2xl p-6 text-left border-t border-white/10">
+                <h3 class="text-xs font-bold uppercase tracking-widest text-amber-200/90 mb-4 flex items-center gap-2"><i data-lucide="sparkles" class="w-3 h-3"></i> AI Companion</h3>
+                <div class="flex gap-2 mb-2 relative">
+                    <input type="text" id="task-input" placeholder="What is your goal?" class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:bg-black/40 focus:border-amber-500/50 transition-colors placeholder-white/30 pr-12">
+                    <button onclick="generatePlan()" id="plan-btn" class="absolute right-1.5 top-1.5 bottom-1.5 aspect-square bg-gradient-to-br from-amber-400 to-orange-600 hover:from-amber-300 hover:to-orange-500 text-white rounded-lg transition-transform active:scale-95 flex items-center justify-center shadow-lg shadow-orange-500/20"><i data-lucide="wand-2" class="w-4 h-4"></i></button>
+                </div>
+                <div id="ai-loading" class="hidden py-4 text-center"><div class="inline-block w-4 h-4 border-2 border-white/20 border-t-amber-400 rounded-full animate-spin"></div><span class="text-xs text-white/50 ml-2">Thinking...</span></div>
+                <div id="ai-result" class="hidden mt-3 p-4 bg-black/20 rounded-xl border border-white/5 max-h-40 overflow-y-auto custom-scroll"><ul id="task-list" class="ai-list text-sm text-white/90 font-light"></ul></div>
+                <button onclick="getMotivation()" id="motivate-btn" class="w-full mt-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-medium text-white/70 hover:text-white transition-all flex items-center justify-center gap-2 border border-white/5"><span class="text-lg">✨</span> Instant motivation</button>
+            </div>
+            
+            <div class="text-center mt-6">
+                <button onclick="resetTimer()" class="text-white/40 text-xs uppercase tracking-widest hover:text-white transition-colors flex items-center justify-center gap-2 mx-auto"><i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset Timer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW: TASKS -->
+    <!-- ========================================== -->
+    <div id="view-tasks" class="view-section hidden-view w-full max-w-md">
+        <div class="glass-panel rounded-[2rem] p-8 h-[600px] flex flex-col relative">
+            <button onclick="navigateTo('home')" class="absolute top-6 left-6 p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </button>
+            
+            <div class="text-center mb-8 mt-4">
+                <h2 class="font-display text-2xl font-bold">Task Flow</h2>
+                <p class="text-slate-400 text-xs uppercase tracking-widest">Plan • Focus • Execute</p>
+            </div>
+
+            <div class="flex gap-2 mb-6">
+                <input type="text" id="new-task-input" placeholder="Add a new task..." 
+                       onkeypress="if(event.key === 'Enter') addTask()"
+                       class="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors">
+                <button onclick="addTask()" class="bg-teal-600 hover:bg-teal-500 text-white p-3 rounded-xl transition-colors shadow-lg shadow-teal-500/20">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div id="user-task-list" class="flex-1 overflow-y-auto custom-scroll space-y-2 pr-2">
+                <div class="text-center text-white/30 text-sm mt-10 italic">No tasks yet. Let's get productive!</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW: CALENDAR -->
+    <!-- ========================================== -->
+    <div id="view-calendar" class="view-section hidden-view w-full max-w-md">
+        <div class="glass-panel rounded-[2rem] p-8 min-h-[500px] relative">
+            <button onclick="navigateTo('home')" class="absolute top-6 left-6 p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </button>
+
+            <div class="text-center mb-8 mt-4">
+                <h2 class="font-display text-2xl font-bold">History</h2>
+                <p class="text-slate-400 text-xs uppercase tracking-widest">Consistency is Key</p>
+            </div>
+
+            <div class="flex items-center justify-between mb-6 px-2">
+                <button onclick="changeMonth(-1)" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </button>
+                <div class="font-bold text-lg" id="calendar-month-year">October 2023</div>
+                <button onclick="changeMonth(1)" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="calendar-grid mb-2 text-xs text-slate-400 font-medium">
+                <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
+            </div>
+
+            <div id="calendar-days" class="calendar-grid"></div>
+            
+            <div class="mt-8 bg-white/5 rounded-xl p-4 text-center">
+                <p class="text-xs text-slate-400 mb-1">Total Active Days</p>
+                <p class="text-xl font-bold text-emerald-400" id="total-active-days">0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW: STATS -->
+    <!-- ========================================== -->
+    <div id="view-stats" class="view-section hidden-view w-full max-w-md">
+        <div class="glass-panel rounded-[2rem] p-8 min-h-[500px] relative">
+            <button onclick="navigateTo('home')" class="absolute top-6 left-6 p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </button>
+
+            <div class="text-center mb-10 mt-4">
+                <h2 class="font-display text-2xl font-bold">Insights</h2>
+                <p class="text-slate-400 text-xs uppercase tracking-widest">Your Growth Journey</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="bg-white/5 rounded-2xl p-5 border border-white/5 text-center">
+                    <div class="text-3xl font-display font-bold text-indigo-400 mb-1" id="stat-sessions">0</div>
+                    <div class="text-xs text-slate-400 uppercase tracking-wider">Sessions</div>
+                </div>
+                <div class="bg-white/5 rounded-2xl p-5 border border-white/5 text-center">
+                    <div class="text-3xl font-display font-bold text-rose-400 mb-1" id="stat-minutes">0</div>
+                    <div class="text-xs text-slate-400 uppercase tracking-wider">Minutes</div>
+                </div>
+            </div>
+
+            <div class="bg-black/20 rounded-2xl p-6 border border-white/5">
+                <h3 class="text-sm font-bold text-white/80 mb-4 flex items-center gap-2">
+                    <i data-lucide="award" class="w-4 h-4 text-amber-400"></i> Achievement Level
+                </h3>
+                <div class="relative pt-2">
+                    <div class="flex justify-between text-xs text-slate-400 mb-2">
+                        <span>Novice</span>
+                        <span>Master</span>
+                    </div>
+                    <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div id="level-progress" class="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500 w-0 transition-all duration-1000"></div>
+                    </div>
+                    <p id="level-text" class="text-xs text-center mt-3 text-white/60">Complete more sessions to level up!</p>
+                </div>
+            </div>
+            
+            <button onclick="clearStats()" class="w-full mt-8 py-3 text-xs text-red-400/50 hover:text-red-400 border border-transparent hover:border-red-400/20 rounded-xl transition-all">
+                Reset All Data
+            </button>
+        </div>
+    </div>
+    
+    <!-- ========================================== -->
+    <!-- VIEW: MEMES (New) -->
+    <!-- ========================================== -->
+    <div id="view-memes" class="view-section hidden-view w-full max-w-md">
+        <div class="glass-panel rounded-[2rem] p-8 min-h-[500px] relative flex flex-col">
+            <button onclick="navigateTo('home')" class="absolute top-6 left-6 p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </button>
+
+            <div class="text-center mb-8 mt-4">
+                <h2 class="font-display text-2xl font-bold">Meme Stash</h2>
+                <p class="text-slate-400 text-xs uppercase tracking-widest">AI Generated Tomato Humor</p>
+            </div>
+
+            <!-- Meme Container -->
+            <div id="meme-container" class="flex-1 flex items-center justify-center p-4">
+                <div class="text-center text-white/40 italic">
+                    <i data-lucide="smile" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                    <p>Click below to generate a meme!</p>
+                </div>
+            </div>
+
+            <!-- Generator Button -->
+            <button onclick="generateMeme()" id="meme-btn" class="w-full mt-6 py-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold shadow-lg shadow-orange-500/20 transform transition-all active:scale-95 flex items-center justify-center gap-2">
+                <i data-lucide="sparkles" class="w-5 h-5"></i> Fetch Fresh Meme
+            </button>
+        </div>
+    </div>
+
+
+    <script>
+        // --- API CONFIGURATION ---
+        const apiKey = ""; 
+
+        // --- GLOBAL CONSTANTS & STATE ---
+        const FULL_DASH_ARRAY = 2 * Math.PI * 120; 
+        const MODES = {
+            focus: { time: 25, label: 'Focus Session', theme: 'theme-focus' },
+            short: { time: 5, label: 'Short Break', theme: 'theme-short' },
+            long: { time: 10, label: 'Long Break', theme: 'theme-long' }
+        };
+
+        let currentMode = 'focus';
+        let timeLeft = 25 * 60;
+        let totalTime = 25 * 60;
+        let isRunning = false;
+        let timerInterval = null;
+        let soundEnabled = true;
+        let currentCalendarDate = new Date();
+
+        // --- LOCAL STORAGE HELPERS ---
+        const TaskStore = {
+            get: () => JSON.parse(localStorage.getItem('lumina_tasks') || '[]'),
+            set: (tasks) => localStorage.setItem('lumina_tasks', JSON.stringify(tasks)),
+            add: (text) => {
+                const tasks = TaskStore.get();
+                tasks.push({ id: Date.now(), text, done: false });
+                TaskStore.set(tasks);
+                renderTasks();
+            },
+            toggle: (id) => {
+                const tasks = TaskStore.get().map(t => t.id === id ? {...t, done: !t.done} : t);
+                TaskStore.set(tasks);
+                renderTasks();
+            },
+            remove: (id) => {
+                const tasks = TaskStore.get().filter(t => t.id !== id);
+                TaskStore.set(tasks);
+                renderTasks();
+            }
+        };
+
+        const StatsStore = {
+            get: () => {
+                const defaults = { sessions: 0, minutes: 0, history: {} };
+                const stored = JSON.parse(localStorage.getItem('lumina_stats') || '{}');
+                return { ...defaults, ...stored };
+            },
+            addSession: (minutes) => {
+                const stats = StatsStore.get();
+                stats.sessions++;
+                stats.minutes += minutes;
+
+                const today = new Date().toISOString().split('T')[0];
+                if (!stats.history) stats.history = {};
+                if (!stats.history[today]) stats.history[today] = 0;
+                stats.history[today] += minutes;
+
+                localStorage.setItem('lumina_stats', JSON.stringify(stats));
+                renderStats();
+                renderCalendar(); 
+            },
+            reset: () => {
+                localStorage.setItem('lumina_stats', JSON.stringify({ sessions: 0, minutes: 0, history: {} }));
+                renderStats();
+                renderCalendar();
+            }
+        };
+
+        // --- INITIALIZATION ---
+        window.addEventListener('load', () => {
+            createParticles();
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('loader-hidden');
+            }, 1500);
+            
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+
+            renderTasks();
+            renderStats();
+            renderCalendar();
+        });
+
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for(let i=0; i<20; i++) {
+                const p = document.createElement('div');
+                p.classList.add('particle');
+                p.style.left = Math.random() * 100 + 'vw';
+                p.style.width = Math.random() * 4 + 2 + 'px';
+                p.style.height = p.style.width;
+                p.style.animationDuration = Math.random() * 10 + 10 + 's';
+                p.style.animationDelay = Math.random() * 5 + 's';
+                container.appendChild(p);
+            }
+        }
+
+        // --- NAVIGATION LOGIC ---
+        function navigateTo(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => {
+                el.classList.remove('active-view');
+                el.classList.add('hidden-view');
+            });
+
+            const target = document.getElementById(`view-${viewId}`);
+            target.classList.remove('hidden-view');
+            target.classList.add('active-view');
+
+            const bg = document.getElementById('bg-layer');
+            if (viewId === 'timer') {
+                bg.className = MODES[currentMode].theme;
+            } else if (viewId === 'tasks') {
+                bg.className = 'theme-short'; 
+            } else if (viewId === 'stats') {
+                bg.className = 'theme-long';
+            } else if (viewId === 'calendar') {
+                bg.className = 'theme-calendar';
+            } else if (viewId === 'memes') {
+                bg.className = 'theme-memes';
+            } else {
+                bg.className = 'theme-default'; 
+            }
+
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            
+            if(viewId === 'calendar') renderCalendar();
+            if(viewId === 'memes' && document.getElementById('meme-container').innerHTML.includes('Click below')) {
+                // Optional: Auto generate on first visit? Let's leave it manual for fun.
+            }
+        }
+
+        // --- MEME GENERATOR LOGIC ---
+        async function generateMeme() {
+            const btn = document.getElementById('meme-btn');
+            const container = document.getElementById('meme-container');
+            
+            // Loading State
+            btn.disabled = true;
+            btn.innerHTML = `<div class="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin"></div> Generatin'...`;
+            
+            const prompt = "Generate a funny, clean, witty short text-based meme or joke about procrastination, the pomodoro technique, or tomatoes. It should be formatted as a punchline or a relatable thought. Be creative!";
+            
+            const text = await callGemini(prompt);
+            
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="sparkles" class="w-5 h-5"></i> Another One`;
+            lucide.createIcons();
+
+            if(text) {
+                // Render as a "Meme Card"
+                container.innerHTML = `
+                    <div class="bg-black/30 p-6 rounded-2xl border-2 border-white/20 transform rotate-1 hover:rotate-0 transition-transform duration-300 w-full">
+                        <div class="text-4xl mb-4 text-center">🍅</div>
+                        <p class="text-xl font-bold text-center font-display text-white leading-relaxed">
+                            "${text.replace(/"/g, '')}"
+                        </p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `<div class="text-red-400">Failed to fetch meme. Try again!</div>`;
+            }
+        }
+
+
+        // --- CALENDAR LOGIC ---
+        function changeMonth(delta) {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + delta);
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+            const today = new Date();
+            
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            document.getElementById('calendar-month-year').textContent = `${monthNames[month]} ${year}`;
+
+            const container = document.getElementById('calendar-days');
+            container.innerHTML = '';
+
+            const firstDay = new Date(year, month, 1).getDay(); 
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const history = StatsStore.get().history || {};
+
+            for (let i = 0; i < firstDay; i++) {
+                container.innerHTML += `<div class="calendar-day"></div>`;
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const checkDate = new Date(year, month, day);
+                const offset = checkDate.getTimezoneOffset();
+                const localDate = new Date(checkDate.getTime() - (offset*60*1000));
+                const dateKey = localDate.toISOString().split('T')[0];
+                
+                const hasActivity = history[dateKey] && history[dateKey] > 0;
+                const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+
+                let classes = "calendar-day text-white/70 hover:bg-white/5 transition-colors";
+                if (isToday) classes += " bg-white/10 font-bold text-white border border-white/20";
+                
+                let dot = hasActivity ? `<div class="day-active-dot"></div>` : `<div style="height:4px; margin-top:2px;"></div>`;
+
+                container.innerHTML += `
+                    <div class="${classes}">
+                        <span>${day}</span>
+                        ${dot}
+                    </div>
+                `;
+            }
+            const totalDays = Object.keys(history).length;
+            document.getElementById('total-active-days').textContent = totalDays;
+        }
+
+        // --- TIMER LOGIC ---
+        function updateDisplay() {
+            const m = Math.floor(timeLeft / 60);
+            const s = timeLeft % 60;
+            const timeStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            
+            const display = document.getElementById('timer-display');
+            const ring = document.getElementById('progress-ring');
+            
+            if(display) display.textContent = timeStr;
+            document.title = isRunning ? `${timeStr} • ${MODES[currentMode].label}` : 'Lumina Focus';
+            
+            if(ring) {
+                const fraction = Math.max(0, timeLeft / totalTime);
+                const offset = FULL_DASH_ARRAY - (fraction * FULL_DASH_ARRAY);
+                ring.style.strokeDashoffset = offset;
+            }
+        }
+
+        function setMode(mode) {
+            pauseTimer();
+            currentMode = mode;
+            timeLeft = MODES[mode].time * 60;
+            totalTime = timeLeft;
+            
+            document.getElementById('bg-layer').className = MODES[mode].theme;
+            document.getElementById('mode-label').textContent = MODES[mode].label;
+            
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.className = 'mode-btn py-3 rounded-xl text-sm font-medium transition-all text-white/60 hover:text-white hover:bg-white/5';
+            });
+            document.getElementById(`btn-${mode}`).className = 'mode-btn py-3 rounded-xl text-sm font-semibold transition-all bg-white/10 shadow-sm text-white';
+
+            const badge = document.getElementById('status-badge');
+            badge.textContent = "Tap to Start";
+            badge.classList.remove('opacity-100');
+            
+            document.getElementById('ai-result').classList.add('hidden');
+            updateDisplay();
+        }
+
+        function toggleTimer() {
+            if (isRunning) pauseTimer();
+            else startTimer();
+        }
+
+        function startTimer() {
+            if(isRunning) return;
+            isRunning = true;
+            
+            const badge = document.getElementById('status-badge');
+            badge.textContent = "Focusing...";
+            badge.classList.add('opacity-100');
+            
+            const mainBtnIcon = document.getElementById('play-icon');
+            if (mainBtnIcon && mainBtnIcon.parentElement) {
+                 mainBtnIcon.parentElement.innerHTML = `<i data-lucide="pause" class="w-8 h-8 fill-current"></i>`;
+                 lucide.createIcons();
+            }
+
+            timerInterval = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateDisplay();
+                } else {
+                    timerFinished();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            document.getElementById('status-badge').textContent = "Paused";
+            
+            const btn = document.getElementById('main-btn');
+            if (btn) {
+                btn.innerHTML = `<i data-lucide="play" id="play-icon" class="w-8 h-8 fill-current translate-x-0.5"></i>`;
+                lucide.createIcons();
+            }
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            timeLeft = MODES[currentMode].time * 60;
+            totalTime = timeLeft;
+            document.getElementById('status-badge').textContent = "Ready";
+            updateDisplay();
+        }
+
+        function adjustTime(minutes) {
+            timeLeft += minutes * 60;
+            if (timeLeft < 0) timeLeft = 0;
+            if (timeLeft > totalTime) totalTime = timeLeft; 
+            updateDisplay();
+        }
+
+        function timerFinished() {
+            pauseTimer();
+            document.getElementById('status-badge').textContent = "Completed";
+            if (soundEnabled) playAlarm();
+            
+            StatsStore.addSession(MODES[currentMode].time);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            if(soundEnabled) {
+                icon.setAttribute('data-lucide', 'volume-2');
+                icon.style.opacity = '1';
+            } else {
+                icon.setAttribute('data-lucide', 'volume-x');
+                icon.style.opacity = '0.5';
+            }
+            lucide.createIcons();
+        }
+
+        function playAlarm() {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523.25, now);
+            osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.1);
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.3, now + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 2);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 2);
+        }
+
+        // --- TASKS LOGIC ---
+        function addTask() {
+            const input = document.getElementById('new-task-input');
+            const text = input.value.trim();
+            if(!text) return;
+            
+            TaskStore.add(text);
+            input.value = '';
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('user-task-list');
+            const tasks = TaskStore.get();
+            
+            if (tasks.length === 0) {
+                list.innerHTML = `<div class="text-center text-white/30 text-sm mt-10 italic">No tasks yet. Let's get productive!</div>`;
+                return;
+            }
+
+            list.innerHTML = tasks.map(task => `
+                <div class="group flex items-center gap-3 bg-white/5 hover:bg-white/10 p-3 rounded-xl transition-colors border border-transparent hover:border-white/10">
+                    <button onclick="TaskStore.toggle(${task.id})" class="flex-shrink-0 w-5 h-5 rounded-md border-2 ${task.done ? 'bg-teal-500 border-teal-500 text-black' : 'border-white/30 text-transparent'} flex items-center justify-center transition-all">
+                        <i data-lucide="check" class="w-3 h-3 ${task.done ? 'opacity-100' : 'opacity-0'}"></i>
+                    </button>
+                    <span class="flex-1 text-sm ${task.done ? 'line-through text-white/30' : 'text-white/90'} truncate">${task.text}</span>
+                    <button onclick="TaskStore.remove(${task.id})" class="text-white/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `).join('');
+            
+            lucide.createIcons();
+        }
+
+        // --- STATS LOGIC ---
+        function renderStats() {
+            const stats = StatsStore.get();
+            document.getElementById('stat-sessions').textContent = stats.sessions;
+            document.getElementById('stat-minutes').textContent = stats.minutes;
+
+            const level = Math.floor(Math.sqrt(stats.minutes / 25)); 
+            const maxLevel = 10;
+            const progress = Math.min((level / maxLevel) * 100, 100);
+            
+            document.getElementById('level-progress').style.width = `${progress}%`;
+            document.getElementById('level-text').textContent = level === 0 ? "Complete 25m to reach Level 1" : `Current Level: ${level}`;
+        }
+        
+        function clearStats() {
+            if(confirm("Are you sure you want to reset your stats?")) {
+                StatsStore.reset();
+            }
+        }
+
+        // --- AI (GEMINI) LOGIC ---
+        async function callGemini(prompt) {
+            if (!apiKey) {
+                alert("API Key is missing!");
+                return null;
+            }
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const payload = { contents: [{ parts: [{ text: prompt }] }] };
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            
+            for (let i = 0; i <= delays.length; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) {
+                        if (response.status === 429 && i < delays.length) {
+                             await new Promise(r => setTimeout(r, delays[i]));
+                             continue;
+                        }
+                        throw new Error(`API Error: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    return data.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
+                } catch (error) {
+                    if (i === delays.length) return "Connection failed.";
+                }
+            }
+        }
+
+        async function generatePlan() {
+            const goal = document.getElementById('task-input').value.trim();
+            if (!goal) return;
+            
+            const btn = document.getElementById('plan-btn');
+            const originalIcon = btn.innerHTML;
+            btn.innerHTML = `<div class="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>`;
+            btn.disabled = true;
+            document.getElementById('ai-result').classList.add('hidden');
+            document.getElementById('ai-loading').classList.remove('hidden');
+
+            const duration = Math.floor(timeLeft / 60);
+            const prompt = `I am starting a ${duration}-min session. Goal: "${goal}". Break this into 3-4 micro-tasks (under 8 words). Return ONLY valid HTML <li> elements.`;
+
+            const result = await callGemini(prompt);
+
+            document.getElementById('ai-loading').classList.add('hidden');
+            btn.innerHTML = originalIcon;
+            btn.disabled = false;
+            lucide.createIcons();
+
+            if (result) {
+                let cleanHtml = result.replace(/```html/g, '').replace(/```/g, '').trim();
+                if(!cleanHtml.includes('<li>')) cleanHtml = `<li>${cleanHtml}</li>`;
+                document.getElementById('task-list').innerHTML = cleanHtml;
+                document.getElementById('ai-result').classList.remove('hidden');
+            }
+        }
+
+        async function getMotivation() {
+            const btn = document.getElementById('motivate-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<span class="animate-pulse">✨ Divining...</span>`;
+            btn.disabled = true;
+
+            const modeName = MODES[currentMode].label;
+            const prompt = `Short, punchy motivational quote for "${modeName}". Max 15 words. Plain text.`;
+            const result = await callGemini(prompt);
+
+            btn.disabled = false;
+            if (result) {
+                document.getElementById('task-list').innerHTML = `<li class="italic text-amber-200">"${result.trim()}"</li>`;
+                document.getElementById('ai-result').classList.remove('hidden');
+                btn.innerHTML = originalText;
+            } else {
+                 btn.innerHTML = originalText;
+            }
+        }
+    </script>
+</body>
+</html>
